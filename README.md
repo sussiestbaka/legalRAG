@@ -71,11 +71,11 @@ The system allows a user to:
     `git clone `
 
 
-2. Make sure that you fulfill all the requirements: Python 3.11 or later with all [requirements.txt]() dependencies installed, . To install, run:
+2. Make sure that you fulfill all the requirements: Python 3.11 or later with all [requirements.txt](https://github.com/thejasprab/legalRAG/blob/main/requirements.txt) dependencies installed, . To install, run:
 
     `pip install -r requirements.txt`
 
-3. After installing all the packages from requirements. Run the [legalRAG.py]().
+3. After installing all the packages from requirements. Run the [legalRAG.py](https://github.com/thejasprab/legalRAG/blob/main/legalRAG.py).
 
     `python legalRAG.py`
 
