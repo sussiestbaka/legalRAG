@@ -50,7 +50,7 @@ if __name__ == "__main__":
     print(f"Watching {watch_folder} for PDF files...")
     try:
         while True:
-            time.sleep(1)
+            time.sleep(2)
     except KeyboardInterrupt:
         observer.stop()
     observer.join()
