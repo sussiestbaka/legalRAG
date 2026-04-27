@@ -120,7 +120,7 @@ def add_documents(
     # 1. Duplicate check
     file_hash = get_file_hash(file_path)
     if is_duplicate(file_hash):
-        raise ValueError(f"File {file_path} has already been ingested (hash: {file_hash}). Skipping.")
+        print(f"⚠️ Skipping duplicate file: {file_path}")
 
     # 2. Chunk the pages
     chunks = tokeniseChunking(pages)   # uses SentenceTransformersTokenTextSplitter
