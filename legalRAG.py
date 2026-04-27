@@ -12,6 +12,8 @@ from langchain_experimental.text_splitter import SemanticChunker
 from langchain_huggingface import HuggingFaceEmbeddings
 from langchain_community.retrievers import BM25Retriever
 from langchain.retrievers import EnsembleRetriever
+from ingestion.embedder import get_chunking_embedder, get_db_embedder
+from ingestion.chunker import tokeniseChunking
 import gradio as gr
 from typing import List
 import os
@@ -37,33 +39,6 @@ def loadingSingleFile(filePath):
     pages=loader.load()
     return pages
 
-def lenghtWiseChunking(pages):
-    textSplitterLength = CharacterTextSplitter(
-    chunk_size=500,
-    chunk_overlap=100
-    )
-    chunks = textSplitterLength.split_documents(pages)
-    return chunks
-
-def hierarchialRecursiveChunking(pages):
-    textSplitterPara = RecursiveCharacterTextSplitter(
-    chunk_size = 500,
-    chunk_overlap = 100,
-    separators = ["\n\n", "\n", " ", ""]
-    )
-    chunks = textSplitterPara.split_documents(pages)
-    return chunks
-
-def semanticChunking(pages):
-    embeddings = HuggingFaceEmbeddings(model_name="all-MiniLM-L6-v2")
-    splitter = SemanticChunker(embeddings)
-    chunks = splitter.split_documents(pages)
-    return chunks
-
-def tokeniseChunking(pages):
-    tokenTextSplitter = SentenceTransformersTokenTextSplitter(chunk_size=128, chunk_overlap=20)
-    chunks = tokenTextSplitter.split_documents(pages)
-    return chunks
 
 def analyzeChunks(chunks, n=3):
     print(f"Total chunks: {len(chunks)}\n")
@@ -78,14 +53,14 @@ def buildVectorDB(folderFilePath, folderFileCheck=True):
     else:
         pages = loadingSingleFile(folderFilePath)
     chunks = tokeniseChunking(pages)
-    embedding = HuggingFaceEmbeddings(model_name="sentence-transformers/all-mpnet-base-v2")
+    embedding = get_chunking_embedder()
     vectordb = FAISS.from_documents(documents=chunks, embedding=embedding)
     return vectordb, chunks
 
 def addNewFiletoVectorDB(vectordb, newFilePath =testAddingNewFilePath):
     pages = loadingSingleFile(newFilePath)
     chunks = tokeniseChunking(pages)
-    embedding = HuggingFaceEmbeddings(model_name="sentence-transformers/all-mpnet-base-v2")
+    embedding = get_db_embedder()
     vectordb.add_documents(chunks,embedding)
     return vectordb,chunks
 
