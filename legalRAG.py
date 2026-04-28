@@ -3,9 +3,9 @@
 from dotenv import load_dotenv
 from langchain_community.document_loaders import PyPDFLoader
 from langchain_community.vectorstores import FAISS
-from langchain.prompts import PromptTemplate
+from langchain_core.prompts import PromptTemplate
 from langchain_groq import ChatGroq
-from langchain.chains import RetrievalQA
+from langchain_classic.chains import RetrievalQA
 from ingestion.embedder import get_db_embedder
 from ingestion.chunker import tokeniseChunking
 from ingestion.persist import add_document, load_index
