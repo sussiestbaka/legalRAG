@@ -1,0 +1,40 @@
+{% load account socialaccount static %}
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Login</title>
+    <link rel="stylesheet" href="{% static 'css/login.css' %}">
+</head>
+<body>
+    <div class="login-card">
+        <h2>Welcome back</h2>
+
+        <form method="post" action="{% url 'account_login' %}">
+            {% csrf_token %}
+            {{ form.as_p }}
+            <button type="submit">Sign In</button>
+        </form>
+
+        <div class="links">
+            <a href="{% url 'account_reset_password' %}">Forgot password?</a>
+            <p style="margin-top:0.75rem;">Don't have an account? <a href="{% url 'account_signup' %}">Sign up</a></p>
+        </div>
+
+        {% get_providers as socialaccount_providers %}
+        {% if socialaccount_providers %}
+            <div class="divider">or continue with</div>
+            <ul class="social-providers">
+                {% for provider in socialaccount_providers %}
+                    <li>
+                        <a href="{% provider_login_url provider.id %}">
+                            {{ provider.name }}
+                        </a>
+                    </li>
+                {% endfor %}
+            </ul>
+        {% endif %}
+    </div>
+</body>
+</html>

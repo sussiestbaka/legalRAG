@@ -1,0 +1,170 @@
+{% load static %}
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Legal QA Chat</title>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <style>
+        body {
+            font-family: system-ui, -apple-system, sans-serif;
+            max-width: 800px;
+            margin: 2rem auto;
+            padding: 1rem;
+        }
+        .chat-container {
+            border: 1px solid #ccc;
+            border-radius: 8px;
+            padding: 1rem;
+            height: 400px;
+            overflow-y: auto;
+            background: #f9f9f9;
+        }
+        .message {
+            margin: 0.5rem 0;
+            padding: 0.5rem;
+            border-radius: 8px;
+        }
+        .user {
+            background: #e3f2fd;
+            text-align: right;
+        }
+        .assistant {
+            background: #e8e8e8;
+        }
+        .sources {
+            font-size: 0.8rem;
+            color: #555;
+            margin-top: 0.3rem;
+        }
+        .input-area {
+            margin-top: 1rem;
+            display: flex;
+            gap: 0.5rem;
+        }
+        input {
+            flex: 1;
+            padding: 0.5rem;
+            border: 1px solid #ccc;
+            border-radius: 4px;
+        }
+        button {
+            padding: 0.5rem 1rem;
+            background: #0066cc;
+            color: white;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+        }
+        button:disabled {
+            background: #aaa;
+        }
+        .error {
+            color: red;
+        }
+    </style>
+</head>
+<body>
+    <h1>Analizador de Normas, Leyes Estatales y Leyes Federales</h1>
+    <div class="chat-container" id="chatLog"></div>
+    <div class="input-area">
+        <input type="text" id="questionInput" placeholder="Pregunta sobre normas, codigos o leyes..." autofocus>
+        <button id="sendBtn">Enviar</button>
+    </div>
+    <div id="status"></div>
+
+    <script>
+        // Helper to get CSRF token from cookie (required for Django POST)
+        function getCookie(name) {
+            let cookieValue = null;
+            if (document.cookie && document.cookie !== '') {
+                const cookies = document.cookie.split(';');
+                for (let i = 0; i < cookies.length; i++) {
+                    const cookie = cookies[i].trim();
+                    if (cookie.substring(0, name.length + 1) === (name + '=')) {
+                        cookieValue = decodeURIComponent(cookie.substring(name.length + 1));
+                        break;
+                    }
+                }
+            }
+            return cookieValue;
+        }
+
+        const csrftoken = getCookie('csrftoken');
+        let currentSessionId = null;   // will be set after first response
+
+        const chatLog = document.getElementById('chatLog');
+        const questionInput = document.getElementById('questionInput');
+        const sendBtn = document.getElementById('sendBtn');
+        const statusDiv = document.getElementById('status');
+
+        function addMessage(role, content, sources = null) {
+            const msgDiv = document.createElement('div');
+            msgDiv.className = `message ${role}`;
+            msgDiv.innerHTML = `<strong>${role === 'user' ? 'You' : 'Assistant'}:</strong><br>${content}`;
+            if (sources && sources.length) {
+                const srcDiv = document.createElement('div');
+                srcDiv.className = 'sources';
+                srcDiv.innerHTML = `<strong>Sources:</strong> ${sources.join(', ')}`;
+                msgDiv.appendChild(srcDiv);
+            }
+            chatLog.appendChild(msgDiv);
+            chatLog.scrollTop = chatLog.scrollHeight;
+        }
+
+        async function sendQuestion() {
+            const question = questionInput.value.trim();
+            if (!question) return;
+
+            addMessage('user', question);
+            questionInput.value = '';
+            sendBtn.disabled = true;
+            statusDiv.innerText = 'Thinking...';
+
+            try {
+                const response = await fetch('/api/chat/', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'X-CSRFToken': csrftoken
+                    },
+                    body: JSON.stringify({
+                        message: question,
+                        session_id: currentSessionId
+                    })
+                });
+
+                if (!response.ok) {
+                    const text = await response.text();
+                    throw new Error(`Server error ${response.status}: ${text.substring(0, 100)}`);
+                }
+
+                const data = await response.json();
+                // Extract sources from the answer (they appear after "**Fuente(s):**")
+                const sourcesMatch = data.answer.match(/\*\*Fuente\(s\):\*\* (.*)/);
+                const sources = sourcesMatch ? sourcesMatch[1].split(', ') : [];
+                // Clean answer by removing the sources line
+                let cleanAnswer = data.answer.replace(/\n?\*\*Fuente\(s\):\*\* .*$/, '');
+                addMessage('assistant', cleanAnswer, sources);
+
+                // Store session_id for future messages (context retention)
+                if (data.session_id) {
+                    currentSessionId = data.session_id;
+                }
+            } catch (err) {
+                console.error(err);
+                addMessage('assistant', `Error: ${err.message}`);
+            } finally {
+                sendBtn.disabled = false;
+                statusDiv.innerText = '';
+                questionInput.focus();
+            }
+        }
+
+        sendBtn.addEventListener('click', sendQuestion);
+        questionInput.addEventListener('keypress', (e) => {
+            if (e.key === 'Enter') sendQuestion();
+        });
+    </script>
+</body>
+</html>

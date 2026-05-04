@@ -1,0 +1,23 @@
+import os
+import sys
+from pathlib import Path
+
+# Add the parent folder (where your original legalRAG.py lives) to Python path
+BASE_DIR = Path(__file__).resolve().parent.parent.parent  # goes up to legalRAG/
+sys.path.append(str(BASE_DIR))
+
+# Now import your existing modules
+from ingestion.persist import load_index
+from agentic_rag import doRAG   # your main function
+
+# Load FAISS vector database (shared across requests)
+print("Loading FAISS index...")
+vectordb = load_index()   # assumes index is at ../faiss_index relative to legal_saas/
+print("FAISS index loaded.")
+
+# Load article index (article_index.json)
+import json
+article_index_path = BASE_DIR / "article_index.json"
+with open(article_index_path, 'r', encoding='utf-8') as f:
+        article_index = json.load(f)
+        print("Article index loaded.")

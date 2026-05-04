@@ -7,6 +7,26 @@ from watchdog.observers import Observer
 from watchdog.events import FileSystemEventHandler
 from ingestion.persist import add_document, load_index
 
+import subprocess
+import sys
+import os
+
+# Auto-compile Cython extension if needed
+pyd_exists = any(
+    f.startswith("chunker_cy") and f.endswith(".pyd")
+    for f in os.listdir("ingestion")
+)
+
+if not pyd_exists:
+    print("Compiling Cython extension...")
+    subprocess.run(
+        [sys.executable, "setup.py", "build_ext", "--inplace"],
+        cwd="ingestion",
+        check=True
+    )
+    print("Cython extension compiled.")
+
+
 class PDFHandler(FileSystemEventHandler):
     def on_created(self, event):
         if event.is_directory:
@@ -44,6 +64,13 @@ if __name__ == "__main__":
     os.makedirs("data/duplicates", exist_ok=True)
 
     event_handler = PDFHandler()
+    print("Checking for existing PDFs in incoming folder...")
+    for filename in os.listdir(watch_folder):
+        if filename.lower().endswith(".pdf"):
+            filepath = os.path.join(watch_folder, filename)
+            print(f"Found existing PDF: {filepath}")
+            event_handler.on_created(type('Event', (), {'is_directory': False, 'src_path': filepath})())
+
     observer = Observer()
     observer.schedule(event_handler, watch_folder, recursive=False)
     observer.start()
